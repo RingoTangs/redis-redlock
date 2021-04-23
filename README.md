@@ -458,7 +458,7 @@ nginx -v
 # nginx.conf 配置文件
 
 http {
-	# 覆盖均衡
+	# 负载均衡
 	# 权重是 1, 轮询机制
 	# 8081 和 8082 业务代码相同(使用 nginx 进行转发)
     upstream myserver {
