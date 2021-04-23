@@ -1,0 +1,10 @@
+server:
+  port: 8081
+spring:
+  redis:
+    host: 192.168.1.1     # Redis 服务器地址
+    port: 6379            # Redis 服务器端口
+    database: 3
+    password:             # Redis密码(默认为空)
+    connect-timeout: 180s
+    timeout: 60s
