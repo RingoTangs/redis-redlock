@@ -167,7 +167,7 @@ Redis Hash ---> Map<String, Map<Object, Object>>
 
 **（1）购物车、点餐、送快递 数量统计**。
 
-![image-20210421155946770](E:\Typora\image\image-20210421155946770.png)
+<img src="https://img-blog.csdnimg.cn/20210423203920971.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L1JyaW5nb18=,size_16,color_FFFFFF,t_70" alt="image-20210421155946770" style="zoom:150%;" />
 
 
 
