@@ -1041,5 +1041,21 @@ public class LRUCache<K, V> extends LinkedHashMap<K, V> {
 }
 ```
 
+```java
+// 输出结果
+ -- 初始化 -- 
+a 1
+b 2
+c 3
+ -- get(a) -- 
+b 2
+c 3
+a 1
+ -- put(d, 4) -- 
+c 3
+a 1
+d 4
+```
+
 
 
