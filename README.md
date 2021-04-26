@@ -804,3 +804,242 @@ public String saleShop() {
 }
 ```
 
+
+
+# 三、Redis内存
+
+## 1. 设置Redis内存
+
+```properties
+# redis.conf
+
+# 这个就是 Redis 占用最大内存的配置
+# 设置 maxmemory 单位是字节，需要注意单位的转换
+# maxmemory <bytes>
+```
+
+> 如果不设置最大内存大小或者设置最大内存为0， 在64位操作系统下不限制内存大小，在32位操作系统下最多使用3GB内存。
+>
+> **一般生产上如何配置最大内存**？
+>
+> 一般推荐Redis设置内存为最大物理内存的四分之三。
+
+```shell
+# 查看 redis 最大内存
+127.0.0.1:6379> CONFIG GET maxmemory
+1) "maxmemory"
+2) "0"
+
+# 通过命令: 设置 redis 最大内存
+127.0.0.1:6379> CONFIG SET maxmemory 10 
+
+# 查看 redis 使用的内存
+127.0.0.1:6379> info memory  
+# Memory
+used_memory:951600
+used_memory_human:929.30K
+used_memory_rss:10690560
+used_memory_rss_human:10.20M
+used_memory_peak:403604704
+used_memory_peak_human:384.91M
+used_memory_peak_perc:0.24%
+used_memory_overhead:888762
+used_memory_startup:802952
+used_memory_dataset:62838
+used_memory_dataset_perc:42.27%
+allocator_allocated:1017656
+allocator_active:1310720
+allocator_resident:3584000
+total_system_memory:1928933376
+total_system_memory_human:1.80G
+used_memory_lua:38912
+used_memory_lua_human:38.00K
+used_memory_scripts:880
+used_memory_scripts_human:880B
+number_of_cached_scripts:2
+maxmemory:0
+maxmemory_human:0B
+maxmemory_policy:noeviction
+allocator_frag_ratio:1.29
+allocator_frag_bytes:293064
+allocator_rss_ratio:2.73
+allocator_rss_bytes:2273280
+rss_overhead_ratio:2.98
+rss_overhead_bytes:7106560
+mem_fragmentation_ratio:11.74
+mem_fragmentation_bytes:9779968
+mem_not_counted_for_evict:0
+mem_replication_backlog:0
+mem_clients_slaves:0
+mem_clients_normal:84930
+mem_aof_buffer:0
+mem_allocator:jemalloc-5.1.0
+active_defrag_running:0
+lazyfree_pending_objects:0
+```
+
+
+
+## 2. Redis内存打满OOM
+
+## 3. 内存淘汰策略
+### 3.1. 3种key删除策略
+
+如果一个 key 是过期的，那它到了过期时间之后是不是马上就从内存中删除？
+
+答案是否定的，Redis有三种不同的过期 key 删除策略。
+
+**删除策略**：
+
+- 立即删除：立即删除能保证内存中数据的最大新鲜度，key 过期后立马会被删除，其所占的内存就会被释放。但是，当CPU忙的时候，就会给CPU造成额外的压力（对CPU不友好，拿时间换空间）。
+- 惰性删除：数据到达过期时间，不做处理，等下次访问该数据时，如果未过期，返回数据，发现已经过期，删除，返回不存在（对内存不友好，用空间换时间）。
+- 定期删除：定期删除是对以上两种删除策略的折中。**定期删除策略每隔一段时间执行一次删除过期 key 操作**，并通过限制删除操作执行的时常和频率来减少删除操作对CPU时间的影响（定期抽样key，判断是否过期，但是抽查还是有落网之鱼）！
+
+### 3.2. Redis内存淘汰策略
+
+```properties
+# redis.conf 
+
+# redis 的内存淘汰策略, 以下 8 选 1
+# MAXMEMORY POLICY: how Redis will select what to remove when maxmemory
+# is reached. You can select one from the following behaviors:
+#
+# 1: 对所有设置了过期时间的 key 使用 LRU 算法进行删除 
+# volatile-lru -> Evict using approximated LRU, only keys with an expire set.
+
+# 2: 对所有的 key 使用 LRU 算法进行删除
+# allkeys-lru -> Evict any key using approximated LRU.
+# 
+# 3: 对所有设置了过期时间的 key 使用 LFU 算法进行删除
+# volatile-lfu -> Evict using approximated LFU, only keys with an expire set.
+# 
+# 4: 对所有的 key 使用 LUF 算法进行删除
+# allkeys-lfu -> Evict any key using approximated LFU.
+# 
+# 5: 对所有设置了过期时间的 key 随机删除
+# volatile-random -> Remove a random key having an expire set.
+#
+# 6: 对所有的 key 随机删除
+# allkeys-random -> Remove a random key, any key.
+# 
+# 7: 删除马上要过期的 key
+# volatile-ttl -> Remove the key with the nearest expire time (minor TTL)
+
+# 8: 默认、不会删除任何 key
+# noeviction -> Don't evict anything, just return an error on write operations.
+#
+# LRU means Least Recently Used
+# LFU means Least Frequently Used
+#
+# Both LRU, LFU and volatile-ttl are implemented using approximated
+# randomized algorithms.
+# The default is:
+#
+# maxmemory-policy noeviction
+```
+
+
+
+```shell
+# 命令查看 Redis 内存淘汰策略
+127.0.0.1:6379> CONFIG GET maxmemory-policy
+1) "maxmemory-policy"
+2) "noeviction"
+
+# 命令设置 Redis 内存淘汰策略
+127.0.0.1:6379> CONFIG SET maxmemory-policy allkeys-lru
+OK
+127.0.0.1:6379> CONFIG GET maxmemory-policy
+1) "maxmemory-policy"
+2) "allkeys-lru"
+```
+
+
+
+## 4. LRU算法
+
+[leetcode-LRU算法](https://leetcode-cn.com/problems/lru-cache/)
+
+[LinkedHashMap](https://hestyle.blog.csdn.net/article/details/105559156)
+
+[LinkedHashMap复用了HashMap的put()为什么插入后还能保证有序?](https://www.cnblogs.com/lyhc/p/10743550.html)
+
+### 4.1. LinkedHashMap
+
+```java
+// 测试代码: 
+LinkedHashMap<String, Object> linkedHashMap = 
+    new LinkedHashMap<>(10, 0.75f, true);
+linkedHashMap.put("a", 1);
+linkedHashMap.put("b", 2);
+linkedHashMap.put("c", 3);
+linkedHashMap.get("b");
+linkedHashMap.get("a");
+linkedHashMap.forEach((k, v) -> System.out.println(k + " " + v));
+```
+
+```java
+// 输出结果: 
+c 3
+b 2
+a 1
+```
+
+```java
+// LinkedHashMap 构造方法
+// accessOrder = true 的作用是调用get()方法是会将查找到的节点放入尾部！
+public LinkedHashMap(int initialCapacity,
+                     float loadFactor,
+                     boolean accessOrder) {
+    super(initialCapacity, loadFactor);
+    this.accessOrder = accessOrder;
+}
+```
+
+
+
+### 4.2. LRUCache
+
+以下是使用 LinkedHashMap 实现的一个 LRU 缓存：
+
+- 设定最大缓存空间 maxEntries；
+- 使用 LinkedHashMap 的构造函数将 accessOrder 设置为 true，开启 LRU 顺序；
+- 覆盖 removeEldestEntry() 方法实现，在节点多于 MAX_ENTRIES 就会将最近最久未使用的数据移除。
+
+```java
+public class LRUCache<K, V> extends LinkedHashMap<K, V> {
+    // 最大 k-v 键值对的数量(最大缓存数)
+    private int maxEntries;
+
+    public LRUCache(int maxEntries) {
+        super(maxEntries, 0.75f, true);
+        this.maxEntries = maxEntries;
+    }
+
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+        // size(): 返回 k-v 键值对的数量
+        return size() > maxEntries;
+    }
+
+    public static void main(String[] args) {
+        LRUCache<String, Object> lruCache = new LRUCache<>(3);
+        lruCache.put("a", 1);
+        lruCache.put("b", 2);
+        lruCache.put("c", 3);
+        System.out.println(" -- 初始化 -- ");
+        lruCache.forEach((k, v) -> System.out.println(k + " " + v));
+
+        System.out.println(" -- get(a) -- ");
+        lruCache.get("a");
+        lruCache.forEach((k, v) -> System.out.println(k + " " + v));
+
+        System.out.println(" -- put(d, 4) -- ");
+        lruCache.put("d", 4);
+        lruCache.forEach((k, v) -> System.out.println(k + " " + v));
+    }
+}
+```
+
+
+
